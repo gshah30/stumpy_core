@@ -1,4 +1,4 @@
-require "./rgba"
+# require "./rgba"
 
 module StumpyCore
 
@@ -28,12 +28,12 @@ module StumpyCore
   # Because of the way pixels are stored in a `Slice`,
   # `Canvas`es are limited to `Int32::MAX = 2147483647` pixels in total,
   # e.g. a maximal size of 46340x46340 for a square image.
-  class Canvas
+  class Canvas(T)
     getter width : Int32
     getter height : Int32
-    getter pixels : Slice(RGBA)
+    getter pixels : Slice(T)
 
-    def initialize(@width, @height, background = RGBA.new(0_u16, 0_u16, 0_u16, 0_u16))
+    def initialize(@width, @height, background = T.new)
       size = @width.to_i64 * @height
       if size > Int32::MAX
         raise "The maximum size of a canvas is #{Int32::MAX} total pixels"
@@ -46,7 +46,7 @@ module StumpyCore
       if size > Int32::MAX
         raise "The maximum size of a canvas is #{Int32::MAX} total pixels"
       end
-      @pixels = Slice.new(size.to_i32, RGBA.new(0_u16, 0_u16, 0_u16, 0_u16))
+      @pixels = Slice.new(size.to_i32, T.new)
 
       (0...@width).each do |x|
         (0...@height).each do |y|
@@ -82,19 +82,19 @@ module StumpyCore
     # wrap them over at the edges.
     # E.g. `wrapping_get(300, 250)` on a 200x200 canvas
     # returns the pixel at `(100, 50)`.
-    def wrapping_get(x : Int32, y : Int32) : RGBA
+    def wrapping_get(x : Int32, y : Int32) : T
       self[x % @width, y % @height]
     end
 
     # Same as `set`, but wrapping along the canvas edges.
     # See `wrapping_get` for an example.
-    def wrapping_set(x : Int32, y : Int32, color : RGBA)
+    def wrapping_set(x : Int32, y : Int32, color : T)
       self[x % @width, y % @height] = color
     end
 
     # Same as `get`,
     # but returns `nil` if `(x, y)` are outside of the canvas
-    def safe_get(x : Int32, y : Int32) : RGBA | Nil
+    def safe_get(x : Int32, y : Int32) : T | Nil
       includes_pixel?(x, y) ? self[x, y] : nil
     end
 
@@ -102,7 +102,7 @@ module StumpyCore
     # if it is part of the canvas.
     # Returns `true` if the pixel was set successfully,
     # `false` if it was outside of the canvas.
-    def safe_set(x : Int32, y : Int32, color : RGBA) : Bool
+    def safe_set(x : Int32, y : Int32, color : T) : Bool
       if includes_pixel?(x, y)
         self[x, y] = color
         true
@@ -143,7 +143,7 @@ module StumpyCore
     # Same as `map!`, but instead of mutating the current canvas,
     # a new one is created and returned
     def map(&block)
-      canvas = Canvas.new(@width, @height)
+      canvas = Canvas(T).new(@width, @height)
       (0...@width).each do |x|
         (0...@height).each do |y|
           canvas[x, y] = yield self[x, y], x, y
@@ -166,7 +166,7 @@ module StumpyCore
     # Same as `map` but passes along a fourth parameter
     # with the index in the `pixels` slice
     def map_with_index(&block)
-      canvas = Canvas.new(@width, @height)
+      canvas = Canvas(T).new(@width, @height)
       (0...@height).each do |y|
         offset = @width * y
         (0...@width).each do |x|
@@ -186,7 +186,7 @@ module StumpyCore
         @pixels == other.pixels
     end
 
-    # Past the contents of a second `Canvas`
+    # Paste the contents of a second `Canvas`
     # into this one,
     # starting at position `(x, y)`.
     # The pixels are combined using the `RGBA#over` function.
@@ -202,3 +202,6 @@ module StumpyCore
     end
   end
 end
+
+# pixels_ptr = Pointer(T).malloc(size.to_i32, background)
+# @pixels = Slice.new(pixels_ptr, size.to_i32 * sizeof(T))

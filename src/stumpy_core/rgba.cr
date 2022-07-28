@@ -14,6 +14,10 @@ module StumpyCore
     getter b : UInt16
     getter a : UInt16
 
+    def initialize
+      @r = @g = @b = @a = 0_u16
+    end
+
     # Create a RGBA value
     # from 16bit (`UInt16`)
     # values for red, green, blue and
